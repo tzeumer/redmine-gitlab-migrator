@@ -98,6 +98,10 @@ class GitlabProject(Project):
         self.api_url = (
             '{base_url}api/v4/projects/'.format(
                 **self._url_match.groupdict())) + str(projectId)
+        
+        self.group_api_url = (
+            '{base_url}api/v4/groups/'.format(
+                **self._url_match.groupdict()))
 
 
     def is_repository_empty(self):
@@ -190,7 +194,7 @@ class GitlabProject(Project):
         :param data: dict formatted as the gitlab API expects it
         :return: the created milestone
         """
-        milestones_url = '{}/milestones'.format(self.api_url)
+        milestones_url = '{}/milestones'.format(self.group_api_url)
 
         # create milestone if not exists
         try:
@@ -225,7 +229,7 @@ class GitlabProject(Project):
     def get_milestones(self):
         if not hasattr(self, '_cache_milestones'):
             self._cache_milestones = self.api.get(
-                '{}/milestones'.format(self.api_url))
+                '{}/milestones'.format(self.group_api_url))
         return self._cache_milestones
 
     def get_milestones_index(self):
