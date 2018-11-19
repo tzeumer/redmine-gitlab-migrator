@@ -1,6 +1,7 @@
 import re
 import logging
 import requests
+import urllib.parse
 
 from . import APIClient, Project
 from urllib.request import urlopen
@@ -82,13 +83,11 @@ class GitlabProject(Project):
         projectId = -1
         groupId = None
 
-        projects_info = self.api.get('{}/projects'.format(self.instance_url))
+        project_info = self.api.get('{}/projects/{}'.format(self.instance_url),urllib.parse.quote_plus(path_with_namespace))
 
-        for project_attributes in projects_info:
-            if project_attributes.get('path_with_namespace') == path_with_namespace:
-                projectId = project_attributes.get('id')
-                if project_attributes.get('namespace').get('kind') == 'group':
-                    groupId = project_attributes.get('namespace').get('id')
+        projectId = project_info.get('id')
+        if project_info.get('namespace').get('kind') == 'group':
+            groupId = project_info.get('namespace').get('id')
 
         self.project_id = projectId
         if projectId == -1 :
