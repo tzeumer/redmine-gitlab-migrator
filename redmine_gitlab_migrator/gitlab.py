@@ -101,7 +101,7 @@ class GitlabProject(Project):
         
         self.group_api_url = (
             '{base_url}api/v4/groups/'.format(
-                **self._url_match.groupdict()))
+                **self._url_match.groupdict())) + str(groupId)
 
 
     def is_repository_empty(self):
