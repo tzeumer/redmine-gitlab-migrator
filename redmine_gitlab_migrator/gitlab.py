@@ -83,7 +83,7 @@ class GitlabProject(Project):
         projectId = -1
         groupId = None
 
-        project_info = self.api.get('{}/projects/{}'.format(self.instance_url),urllib.parse.quote_plus(path_with_namespace))
+        project_info = self.api.get('{}/projects/{}'.format(self.instance_url,urllib.parse.quote_plus(path_with_namespace)))
 
         projectId = project_info.get('id')
         if project_info.get('namespace').get('kind') == 'group':
