@@ -41,7 +41,7 @@ class TextileConverter():
         title = title.replace("ä", "ae")
         title = title.replace("ö", "oe")
         title = title.replace("ü", "ue")
-        title = unicodedata.normalize('NFD', title).encode('ascii', 'ignore').decode('ascii')
+        title = unicodedata.normalize('NFD', title).encode('utf8', 'ignore').decode('utf8')
         return title
 
     def convert(self, text):
