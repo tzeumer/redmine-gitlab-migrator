@@ -156,8 +156,8 @@ class GitlabProject(Project):
            data['description'] = "{}\n* Uploads:\n  * {}".format(data['description'], uploads_text)
 
         headers = {}
-        # if 'sudo_user' in meta:
-        #     headers['SUDO'] = meta['sudo_user']
+        if 'sudo_user' in meta:
+            headers['SUDO'] = meta['sudo_user']
         issues_url = '{}/issues'.format(self.api_url)
         issue = self.api.post(
             issues_url, data=data, headers=headers)
@@ -168,8 +168,8 @@ class GitlabProject(Project):
         issue_notes_url = '{}/notes'.format(issue_url, 'notes')
         for note_data, note_meta in meta['notes']:
             note_headers = {}
-            # if 'sudo_user' in note_meta:
-            #     note_headers['SUDO'] = note_meta['sudo_user']
+            if 'sudo_user' in note_meta:
+                note_headers['SUDO'] = note_meta['sudo_user']
             self.api.post(
                 issue_notes_url, data=note_data,
                 headers=note_headers)
