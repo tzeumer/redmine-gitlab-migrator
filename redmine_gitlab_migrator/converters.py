@@ -195,6 +195,8 @@ def convert_issue(redmine_api_key, redmine_issue, redmine_user_index, gitlab_use
     labels = [redmine_issue['tracker']['name']]
     if (redmine_issue.get('category')):
         labels.append(redmine_issue['category']['name'])
+    if (redmine_issue.get('status')):
+        labels.append(redmine_issue['status']['name'])
     if (redmine_issue.get('priority')):
         labels.append(redmine_issue['priority']['name'])
 
