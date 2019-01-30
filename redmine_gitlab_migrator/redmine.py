@@ -125,6 +125,10 @@ class RedmineProject(Project):
             for entry in journals:
                 if not entry.get('notes', None):
                     continue
+                if not entry.get('user', None):
+                    print("Found entry without user")
+                    print(entry)
+                    continue
                 user_ids.add(entry['user']['id'])
 
         for i in user_ids:

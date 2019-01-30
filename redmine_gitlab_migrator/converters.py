@@ -68,11 +68,13 @@ def convert_notes(redmine_issue_journals, redmine_user_index, gitlab_user_index,
                 author = redmine_uid_to_gitlab_user(
                     entry['user']['id'], redmine_user_index, gitlab_user_index)['username']
             except KeyError:
+                user = entry.get('user', None)
+
                 # In some cases you have anonymous notes, which do not exist in
                 # gitlab.
                 log.warning(
                     'Redmine user {} is unknown, attribute note '
-                    'to current admin\n'.format(entry['user']))
+                    'to current admin\n'.format(user))
                 author = None
             if not sudo and author is not None:
                 creator_text = " by {}".format(author)
