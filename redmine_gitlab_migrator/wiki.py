@@ -77,6 +77,10 @@ class TextileConverter():
 
         return text
 
+class NopConverter(TextileConverter):
+    def convert(self, text):
+        return text
+
 class WikiPageConverter():
     """
     TODO:
@@ -95,7 +99,7 @@ class WikiPageConverter():
     http://www.redmine.org/projects/redmine/wiki/RedmineTextFormattingTextile
     """
 
-    def __init__(self, local_repo_path):
+    def __init__(self, local_repo_path, textile_converter):
         self.repo_path = local_repo_path
         self.repo = Repo(local_repo_path)
 
@@ -106,7 +110,7 @@ class WikiPageConverter():
             log.error('You need at least pandoc 1.17.0, download from http://pandoc.org/installing.html')
             exit(1)
 
-        self.textile_converter = TextileConverter()
+        self.textile_converter = textile_converter
 
     def convert(self, redmine_page):
         title = (self.textile_converter.normalize(redmine_page["title"])
