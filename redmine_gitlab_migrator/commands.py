@@ -115,6 +115,11 @@ def parse_args():
         help="Initial issue ID, to skip some issues")
 
     parser_issues.add_argument(
+        '--issue-ids',
+        required=False,
+        help="Comma separated issue IDs, to migrate specific issues")
+
+    parser_issues.add_argument(
         '--no-sudo', dest='sudo',
         action='store_false',
         default=True,
@@ -220,7 +225,7 @@ def perform_migrate_issues(args):
     else:
         gitlab_users_index = gitlab_instance.get_users_index()
 
-    redmine_users_index = redmine_project.get_users_index()
+    redmine_users_index = redmine_project.get_users_index(args.issue_ids)
     milestones_index = gitlab_project.get_milestones_index()
     textile_converter = TextileConverter()
 
@@ -228,7 +233,7 @@ def perform_migrate_issues(args):
 
     # get issues
     log.info('Getting redmine issues')
-    issues = redmine_project.get_all_issues()
+    issues = redmine_project.get_issues(args.issue_ids)
     if args.initial_id:
         issues = [issue for issue in issues if int(args.initial_id) <= issue['id']]
 
@@ -361,7 +366,7 @@ def perform_redirect(args):
     redmine_project = RedmineProject(args.redmine_project_url, redmine)
 
     # get issues
-    redmine_issues = redmine_project.get_all_issues()
+    redmine_issues = redmine_project.get_issues(args.issue_ids)
 
     print('# uncomment next line to enable RewriteEngine')
     print('# RewriteEngine On')

@@ -78,12 +78,15 @@ class RedmineProject(Project):
         else:
             return url
 
-    def get_all_issues(self):
+    def get_issues(self, issue_ids=""):
 
         if not hasattr(self, '_cache_issues'):
 
+            if issue_ids:
+                issue_ids = "&issue_id=" + issue_ids
+
             issues = self.api.unpaginated_get(
-                '{}/issues.json?subproject_id=1&status_id=*'.format(self.public_url))
+                '{}/issues.json?status_id=*{}'.format(self.public_url, issue_ids))
             detailed_issues = []
             # It's impossible to get issue history from list view, so get it from
             # detail view...
@@ -105,7 +108,7 @@ class RedmineProject(Project):
         return self.api.get(
             '{}/wiki/{}/{}.json'.format(self.public_url, title, version))
 
-    def get_participants(self):
+    def get_participants(self, issue_ids=""):
         """Get participating users (issues authors/owners)
 
         :return: list of all users participating on issues
@@ -114,7 +117,7 @@ class RedmineProject(Project):
         user_ids = set()
         users = []
 
-        for i in self.get_all_issues():
+        for i in self.get_issues(issue_ids):
             journals = i.get('journals', [])
             for i in chain(i.get('watchers', []),
                            [i['author'], i.get('assigned_to', None)]):
@@ -143,10 +146,10 @@ class RedmineProject(Project):
 
         return users
 
-    def get_users_index(self):
+    def get_users_index(self, issue_ids=""):
         """ Returns dict index of users (by user id)
         """
-        return {i['id']: i for i in self.get_participants()}
+        return {i['id']: i for i in self.get_participants(issue_ids)}
 
     def get_versions(self):
         response = self.api.get('{}/versions.json'.format(self.public_url))
