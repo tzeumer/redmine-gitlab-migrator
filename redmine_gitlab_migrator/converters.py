@@ -7,6 +7,9 @@ import yaml
 log = logging.getLogger(__name__)
 user_dict = None
 
+# TODO: make configurable
+ANONYMOUS_USERNAME = 'removeduser'
+
 # Utils
 
 def load_user_dict(path):
@@ -74,8 +77,8 @@ def convert_notes(redmine_issue_journals, redmine_user_index, gitlab_user_index,
                 # gitlab.
                 log.warning(
                     'Redmine user {} is unknown, attribute note '
-                    'to current admin\n'.format(user))
-                author = None
+                    'to {}\n'.format(user, ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'))
+                author = ANONYMOUS_USERNAME
             if not sudo and author is not None:
                 creator_text = " by {}".format(author)
             else:
@@ -214,8 +217,8 @@ def convert_issue(redmine_api_key, redmine_issue, redmine_user_index, gitlab_use
     except KeyError:
         log.warning(
             'Redmine issue #{} is anonymous, gitlab issue is attributed '
-            'to current admin\n'.format(redmine_issue['id']))
-        author_login = None
+            'to {}\n'.format(redmine_issue['id'], ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'))
+        author_login = ANONYMOUS_USERNAME
 
     if not sudo and author_login is not None:
         creator_text = ' by {}'.format(author_login)
@@ -259,10 +262,16 @@ def convert_issue(redmine_api_key, redmine_issue, redmine_user_index, gitlab_use
             data['assignee_id'] = redmine_uid_to_gitlab_user(
                 assigned_to['id'], redmine_user_index, gitlab_user_index)['id']
         except KeyError:
-            log.warning(
-                'Redmine issue #{} assignee is anonymous. gitlab assinee is attributed '
-                'to current admin\n'.format(redmine_issue['id']))
-            if assigned_to['name']:
+            if ANONYMOUS_USERNAME:
+                log.info(
+                    'Redmine issue #{} assignee is anonymous, assigning to {}'
+                        .format(redmine_issue['id'], ANONYMOUS_USERNAME))
+                data['assignee_id'] = gitlab_user_index[ANONYMOUS_USERNAME]['id']
+            elif assigned_to['name']:
+                # add original assignee as label
+                log.warning(
+                    'Redmine issue #{} assignee is anonymous, adding label "{}"'
+                        .format(redmine_issue['id'], assigned_to['name']))
                 data['labels'] = data['labels'] + ',' + assigned_to['name']
 
     return data, meta, redmine_issue['id']
