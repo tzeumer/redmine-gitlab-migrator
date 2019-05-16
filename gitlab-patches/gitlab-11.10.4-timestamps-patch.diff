@@ -1,0 +1,37 @@
+diff --git a/lib/api/helpers/notes_helpers.rb b/lib/api/helpers/notes_helpers.rb
+index a068de4361c..621f9fe9263 100644
+--- a/lib/api/helpers/notes_helpers.rb
++++ b/lib/api/helpers/notes_helpers.rb
+@@ -92,7 +92,7 @@ module API
+
+         parent = noteable_parent(noteable)
+
+-        opts.delete(:created_at) unless current_user.can?(:set_note_created_at, noteable)
++        #opts.delete(:created_at) unless current_user.can?(:set_note_created_at, noteable)
+
+         opts[:updated_at] = opts[:created_at] if opts[:created_at]
+
+diff --git a/lib/api/issues.rb b/lib/api/issues.rb
+index 999a9cb5a82..b9c9bf37dea 100644
+--- a/lib/api/issues.rb
++++ b/lib/api/issues.rb
+@@ -188,8 +188,8 @@ module API
+
+         authorize! :create_issue, user_project
+
+-        params.delete(:created_at) unless current_user.can?(:set_issue_created_at, user_project)
+-        params.delete(:iid) unless current_user.can?(:set_issue_iid, user_project)
++        #params.delete(:created_at) unless current_user.can?(:set_issue_created_at, user_project)
++        #params.delete(:iid) unless current_user.can?(:set_issue_iid, user_project)
+
+         issue_params = declared_params(include_missing: false)
+
+@@ -232,7 +232,7 @@ module API
+
+         # Setting created_at time only allowed for admins and project/group owners
+         unless current_user.admin? || user_project.owner == current_user || current_user.owned_groups.include?(user_project.owner)
+-          params.delete(:updated_at)
++          #params.delete(:updated_at)
+         end
+
+         update_params = declared_params(include_missing: false).merge(request: request, api: true)

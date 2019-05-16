@@ -223,6 +223,67 @@ The content of htaccess.example will be
     ...
     RedirectMatch 301 ^/issues/999$ https://git.example.com/mygroup/myproject/999
 
+Known issues
+------------
+
+### Using Sudo
+
+Using `sudo` functionality (enabled by default), issues and comments will preserve their author and timestamps.
+However, this will only work when the author is marked as 'admin' in Gitlab.
+As a workaround, either make everybody admin in Gitlab, or patch Gitlab. See gitlab-patches folder.
+
+After patching, restart Gitlab: `sudo gitlab-ctl restart`
+
+Gitlab issue: https://gitlab.com/gitlab-org/gitlab-ce/issues/23144
+
+### Re-opened issues
+
+This script looks as the `closed_on` field of the Redmine issue, which will be filled when the issue is first closed.
+If the issue is re-opened later in Redmine, the migrator will still mark it as closed in Gitlab.
+
+Manual fix: lookup your redmine project id and fix in Redmine DB:
+
+See if you have any re-opened issues:
+
+```
+SELECT issues.id, closed_on
+FROM issues JOIN issue_statuses on (issues.status_id=issue_statuses.id)
+WHERE issue_statuses.is_closed = 0 AND NOT ISNULL(closed_on) AND project_id = <your_id>;
+```
+
+To fix:
+
+```
+UPDATE issues JOIN issue_statuses ON (issues.status_id=issue_statuses.id)
+SET closed_on = NULL
+WHERE issue_statuses.is_closed = 0 AND project_id = <your_id>;
+```
+
+Develop / improving this tool
+-----------------------------
+
+If you want to go back to a clean Gitlab state after migration, use these commands. All issues and uploads of the given
+project will be cleaned!
+
+In `sudo gitlab-rails console`:
+
+```
+project = Project.find_by_name('your-project')
+project.issues.each {|x| x.destroy }
+project.uploads.each {|x| x.destroy }
+``` 
+
+To clean group milestones:
+
+```
+group = Group.find_by_name('your-group')
+group.milestones.each {|x| x.destroy }
+```
+
+Further cleanup:
+
+* Clean caches (will reset issue count in UI): `sudo gitlab-rake cache:clear`
+
 Unit testing
 ------------
 
