@@ -25,6 +25,11 @@ class TextileConverter():
         self.regexImportantMacro = re.compile(r'\{\{important\((.*?)\)\}\}')
         self.regexAnyMacro = re.compile(r'\{\{(.*)\}\}')
         self.regexCodeBlock = re.compile(r'\A  ((.|\n)*)', re.MULTILINE)
+        self.regexHttpLink = re.compile(r'http[s]?://[^ ]+')
+
+    def unescape_link_underscore(self, match):
+        url = match.group(0)
+        return url.replace('\\_', '_')
 
     def wiki_link(self, match):
         name = match.group(1)
@@ -49,6 +54,9 @@ class TextileConverter():
 
         # convert from textile to markdown
         text = pypandoc.convert_text(text, 'markdown_strict', format='textile')
+
+        # gitlab does not support escaped underscores in a url (???)
+        text = re.sub(self.regexHttpLink, self.unescape_link_underscore, text)
 
         # pandoc does not convert everything, notably the [[link|text]] syntax
         # is not handled. So let's fix that.
