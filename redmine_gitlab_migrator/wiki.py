@@ -58,6 +58,10 @@ class TextileConverter():
         # gitlab does not support escaped underscores in a url (???)
         text = re.sub(self.regexHttpLink, self.unescape_link_underscore, text)
 
+        # if the markdown starts with a code block, gitlab will trim the start of the string
+        if text[0:4] == '    ':
+            text = "Codeblock:\n\n" + text
+
         # pandoc does not convert everything, notably the [[link|text]] syntax
         # is not handled. So let's fix that.
 
