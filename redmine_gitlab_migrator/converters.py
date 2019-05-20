@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 user_dict = None
 
 # TODO: make configurable
-ANONYMOUS_USERNAME = 'removeduser'
+ANONYMOUS_USERNAME = ''
 
 # Utils
 
