@@ -117,9 +117,15 @@ class GitlabProject(Project):
 
            log.info('\tuploading {} ({} / {})'.format(u['filename'], u['content_url'], u['content_type']))
 
-           # http://docs.python-requests.org/en/latest/user/quickstart/#post-a-multipart-encoded-file
-           # http://stackoverflow.com/questions/20830551/how-to-streaming-upload-with-python-requests-module-include-file-and-data
-           files = [("file", (u['filename'], urlopen(u['content_url']), u['content_type']))]
+           try:
+               # http://docs.python-requests.org/en/latest/user/quickstart/#post-a-multipart-encoded-file
+               # http://stackoverflow.com/questions/20830551/how-to-streaming-upload-with-python-requests-module-include-file-and-data
+               files = [("file", (u['filename'], urlopen(u['content_url']), u['content_type']))]
+           except urllib.error.HTTPError as e:
+               if e.code == 404:
+                   # attachment was not found in redmine
+                   l.append('{} {}'.format('(attachment did not exist in redmine)', u['description']))
+                   continue
 
            try:
                upload = self.api.post(

@@ -25,6 +25,11 @@ class TextileConverter():
         self.regexImportantMacro = re.compile(r'\{\{important\((.*?)\)\}\}')
         self.regexAnyMacro = re.compile(r'\{\{(.*)\}\}')
         self.regexCodeBlock = re.compile(r'\A  ((.|\n)*)', re.MULTILINE)
+        self.regexHttpLink = re.compile(r'http[s]?://[^ ]+')
+
+    def unescape_link_underscore(self, match):
+        url = match.group(0)
+        return url.replace('\\_', '_')
 
     def wiki_link(self, match):
         name = match.group(1)
@@ -41,7 +46,7 @@ class TextileConverter():
         title = title.replace("ä", "ae")
         title = title.replace("ö", "oe")
         title = title.replace("ü", "ue")
-        title = unicodedata.normalize('NFD', title).encode('ascii', 'ignore').decode('ascii')
+        title = unicodedata.normalize('NFD', title).encode('utf8', 'ignore').decode('utf8')
         return title
 
     def convert(self, text):
@@ -49,6 +54,13 @@ class TextileConverter():
 
         # convert from textile to markdown
         text = pypandoc.convert_text(text, 'markdown_strict', format='textile')
+
+        # gitlab does not support escaped underscores in a url (???)
+        text = re.sub(self.regexHttpLink, self.unescape_link_underscore, text)
+
+        # if the markdown starts with a code block, gitlab will trim the start of the string
+        if text[0:4] == '    ':
+            text = "Codeblock:\n\n" + text
 
         # pandoc does not convert everything, notably the [[link|text]] syntax
         # is not handled. So let's fix that.
@@ -77,6 +89,10 @@ class TextileConverter():
 
         return text
 
+class NopConverter(TextileConverter):
+    def convert(self, text):
+        return text
+
 class WikiPageConverter():
     """
     TODO:
@@ -95,7 +111,7 @@ class WikiPageConverter():
     http://www.redmine.org/projects/redmine/wiki/RedmineTextFormattingTextile
     """
 
-    def __init__(self, local_repo_path):
+    def __init__(self, local_repo_path, textile_converter):
         self.repo_path = local_repo_path
         self.repo = Repo(local_repo_path)
 
@@ -106,7 +122,7 @@ class WikiPageConverter():
             log.error('You need at least pandoc 1.17.0, download from http://pandoc.org/installing.html')
             exit(1)
 
-        self.textile_converter = TextileConverter()
+        self.textile_converter = textile_converter
 
     def convert(self, redmine_page):
         title = (self.textile_converter.normalize(redmine_page["title"])
