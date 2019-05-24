@@ -186,7 +186,7 @@ class GitlabProject(Project):
             
         # I'm not sure I like this, but for now it's preferable to the alternative for me
         if 'sudo_user' not in meta:
-            self.api.post('{}/{}'.format(issue_url, 'unsubscribe')
+            self.api.post('{}/{}'.format(issue_url, 'unsubscribe'), data={}, headers={})
 
         return issue
 
