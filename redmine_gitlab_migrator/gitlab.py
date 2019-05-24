@@ -183,6 +183,10 @@ class GitlabProject(Project):
         # Handle closed status
         if meta['must_close']:
             self.api.put(issue_url, {'state_event': 'close'})
+            
+        # I'm not sure I like this, but for now it's preferable to the alternative for me
+        if 'sudo_user' not in meta:
+            self.api.post('{}/{}'.format(issue_url, 'unsubscribe')
 
         return issue
 
