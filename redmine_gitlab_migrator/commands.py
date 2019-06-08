@@ -1,8 +1,12 @@
 #!/bin/env python3
 import argparse
 import logging
+import os
 import re
+import requests
 import sys
+
+from time import sleep
 
 from redmine_gitlab_migrator.redmine import RedmineProject, RedmineClient
 from redmine_gitlab_migrator.gitlab import GitlabProject, GitlabClient
@@ -181,6 +185,43 @@ def check_no_issue(redmine_project, gitlab_project):
 def check_origin_milestone(redmine_project, gitlab_project):
     return len(redmine_project.get_versions()) > 0
 
+def wiki_attachment(redmine_wiki_attachment, redmine_api_key, wiki_repo_path):
+    """ Download attatchment
+
+    :param redmine_wiki_attachment: a dict describing redmine-api-style attachment
+    :param redmine_api_key: the redmine api key used for getting the attachment without logging in
+    :param wiki_repo_path: path for GitLab project repository
+    :return: a dict describing the attachment
+    """
+    attachment_url = '{}?key={}'.format(redmine_wiki_attachment['content_url'], redmine_api_key)
+
+    attachment_filename_path = os.path.join(
+        wiki_repo_path,
+        'uploads',
+        'redmine',
+        str(redmine_wiki_attachment['id']),
+        redmine_wiki_attachment['filename'].strip()
+    )
+
+    response_attachment = requests.get(attachment_url, allow_redirects=True)
+    response_attachment.raise_for_status()
+    os.makedirs(os.path.dirname(attachment_filename_path), exist_ok=True)
+    open(attachment_filename_path, 'wb').write(response_attachment.content)
+
+
+    description = redmine_wiki_attachment.get('description', '').strip()
+    if len(description) == 0:
+        description = redmine_wiki_attachment['filename'].strip()
+
+    attachment_info = {
+        'filename': redmine_wiki_attachment['filename'],
+        'file_path': attachment_filename_path,
+        'description': description,
+    }
+
+    return attachment_info
+
+
 def perform_migrate_pages(args):
     redmine = RedmineClient(args.redmine_key, args.no_verify)
     redmine_project = RedmineProject(args.redmine_project_url, redmine)
@@ -198,12 +239,26 @@ def perform_migrate_pages(args):
     for page in redmine_project.get_all_pages():
         print("Collecting " + page["title"])
         start_version = page["version"] if args.no_history else 1
-        for version in range(start_version, page["version"]+1):
+        for version in range(start_version, page["version"] + 1):
             try:
-                full_page = redmine_project.get_page(page["title"], version)
-                pages.append(full_page)
-            except:
+                for i in range(5):
+                    try:
+                        full_page = redmine_project.get_page(page["title"], version)
+                        break
+                    except:
+                        sleep(1)
+                else:
+                    full_page = redmine_project.get_page(page["title"], version)
+            except Exception as e:
                 log.error("Error when retrieving " + page["title"] + ", version " + str(version))
+                continue
+            for attachment_key, attachment in enumerate(full_page['attachments']):
+                full_page['attachments'][attachment_key] = wiki_attachment(
+                    attachment,
+                    args.redmine_key,
+                    wiki.repo_path
+                )
+            pages.append(full_page)
 
     # sort everything by date and convert
     pages.sort(key=lambda page: page["updated_on"])

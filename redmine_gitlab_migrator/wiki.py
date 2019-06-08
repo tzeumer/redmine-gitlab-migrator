@@ -145,18 +145,23 @@ class WikiPageConverter():
 
         text = self.textile_converter.convert(text)
 
+        if 'attachments' in redmine_page and redmine_page['attachments']:
+            text += '\n\n'
+            for attachment in redmine_page['attachments']:
+                filename_att = attachment['file_path'].replace(self.repo_path,'')[1:]
+                text += '[%s](%s)\n' % (attachment['description'], filename_att)
+                self.repo.index.add([filename_att])
+            text += '\n'
+
         # save file with author/date
         file_name = title + ".md"
         with open(self.repo_path + "/" + file_name, mode='wt', encoding='utf-8') as fd:
             print(text.replace('\n', "\n"), file=fd)
 
-        # todo: check for attachments
-        # todo: upload attachments
-
         if redmine_page["comments"]:
-            commit_msg = redmine_page["comments"] + " (" + title + " v" + str(redmine_page["version"]) + ")";
+            commit_msg = redmine_page["comments"] + " (" + title + " v" + str(redmine_page["version"]) + ")"
         else:
-            commit_msg = title + ", version " + str(redmine_page["version"]);
+            commit_msg = title + ", version " + str(redmine_page["version"])
 
         author = Actor(redmine_page["author"]["name"], "")
         time   = redmine_page["updated_on"].replace("T", " ").replace("Z", " +0000")
