@@ -197,9 +197,6 @@ def wiki_attachment(redmine_wiki_attachment, redmine_api_key, wiki_repo_path):
 
     attachment_filename_path = os.path.join(
         wiki_repo_path,
-        'uploads',
-        'redmine',
-        str(redmine_wiki_attachment['id']),
         redmine_wiki_attachment['filename'].strip()
     )
 
