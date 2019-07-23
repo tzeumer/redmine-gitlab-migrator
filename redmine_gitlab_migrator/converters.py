@@ -70,17 +70,24 @@ def convert_notes(redmine_issue_journals, redmine_user_index, gitlab_user_index,
             try:
                 author = redmine_uid_to_gitlab_user(
                     entry['user']['id'], redmine_user_index, gitlab_user_index)['username']
+                author_name = entry['user']['name']
+                gitlab_author_found = True
             except KeyError:
                 user = entry.get('user', None)
+                author_name = user['name'] if user is not None else user
 
-                # In some cases you have anonymous notes, which do not exist in
-                # gitlab.
+                # In some cases you have anonymous notes, which do not exist in gitlab.
                 log.warning(
-                    'Redmine user {} is unknown, attribute note '
-                    'to {}\n'.format(user, ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'))
+                    'Redmine user "{}" is unknown, attribute note to {}'.format(
+                        author_name,
+                        ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'
+                    )
+                )
                 author = ANONYMOUS_USERNAME
-            if not sudo and author is not None:
-                creator_text = " by {}".format(author)
+                gitlab_author_found = False
+
+            if not sudo or not gitlab_author_found:
+                creator_text = " by {}".format(author_name)
             else:
                 creator_text = ''
             body = "{}\n\n*(from redmine: written on {}{})*".format(
@@ -213,15 +220,21 @@ def convert_issue(redmine_api_key, redmine_issue, redmine_user_index, gitlab_use
     try:
         author_login = redmine_uid_to_gitlab_user(
             redmine_issue['author']['id'], redmine_user_index, gitlab_user_index)['username']
+        gitlab_author_found = True
 
     except KeyError:
         log.warning(
-            'Redmine issue #{} is anonymous, gitlab issue is attributed '
-            'to {}\n'.format(redmine_issue['id'], ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'))
+            'Redmine issue #{} author {} is unknown, gitlab issue is attributed to {}'.format(
+                redmine_issue['id'],
+                redmine_issue['author']['name'],
+                ANONYMOUS_USERNAME if ANONYMOUS_USERNAME else 'current admin'
+            )
+        )
         author_login = ANONYMOUS_USERNAME
+        gitlab_author_found = False
 
-    if not sudo and author_login is not None:
-        creator_text = ' by {}'.format(author_login)
+    if not sudo or not gitlab_author_found:
+        creator_text = ' by {}'.format(redmine_issue['author']['name'])
     else:
         creator_text = ''
 
@@ -262,17 +275,9 @@ def convert_issue(redmine_api_key, redmine_issue, redmine_user_index, gitlab_use
             data['assignee_id'] = redmine_uid_to_gitlab_user(
                 assigned_to['id'], redmine_user_index, gitlab_user_index)['id']
         except KeyError:
-            if ANONYMOUS_USERNAME:
-                log.info(
-                    'Redmine issue #{} assignee is anonymous, assigning to {}'
-                        .format(redmine_issue['id'], ANONYMOUS_USERNAME))
-                data['assignee_id'] = gitlab_user_index[ANONYMOUS_USERNAME]['id']
-            elif assigned_to['name']:
-                # add original assignee as label
-                log.warning(
-                    'Redmine issue #{} assignee is anonymous, adding label "{}"'
-                        .format(redmine_issue['id'], assigned_to['name']))
-                data['labels'] = data['labels'] + ',' + assigned_to['name']
+            # add original assignee as label
+            log.warning('Redmine issue #{} assignee is unknown, adding label "{}"'.format(redmine_issue['id'], assigned_to['name']))
+            data['labels'] = data['labels'] + ',' + assigned_to['name']
 
     return data, meta, redmine_issue['id']
 
