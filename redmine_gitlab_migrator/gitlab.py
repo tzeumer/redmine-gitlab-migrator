@@ -165,24 +165,42 @@ class GitlabProject(Project):
         if 'sudo_user' in meta:
             headers['SUDO'] = meta['sudo_user']
         issues_url = '{}/issues'.format(self.api_url)
-        issue = self.api.post(
-            issues_url, data=data, headers=headers)
 
-        issue_url = '{}/{}'.format(issues_url, issue['iid'])
+        try:
+            issue = self.api.post(
+                issues_url, data=data, headers=headers)
+            # print("ISSUE-DICT: ", issue)  - Example -  {'id': 1376, 'iid': 10, 'project_id': 13, 'title': '-RM-38-MR-Suchfunktion in Header: Umlaute ergeben 0 Treffer wg encoding', 'description': 'Für Ihre Suchanfrage - %C3%B6ffnungszeiten - wurde keine Übereinstimmung\ngefunden\n\n\n*(from redmine: issue id 38, created on 2012-09-27, closed on 2012-09-27)*', 'state': 'opened', 'created_at': '2012-09-27T08:20:07.000Z', 'updated_at': '2019-08-29T19:40:59.818Z', 'closed_at': None, 'closed_by': None, 'labels': ['Fehler', 'Fertig (aktiv auf Echtsystem)', 'Hoch'], 'milestone': None, 'assignees': [], 'author': {'id': 3, 'name': 'Heiko Weier', 'username': 'Heiko', 'state': 'active', 'avatar_url': 'https://www.gravatar.com/avatar/01878d30f3854bfea39caad9beab738e?s=80&d=identicon', 'web_url': 'http://cls3.tub.tuhh.de/Heiko'}, 'assignee': None, 'user_notes_count': 0, 'merge_requests_count': 0, 'upvotes': 0, 'downvotes': 0, 'due_date': None, 'confidential': False, 'discussion_locked': None, 'web_url': 'http://cls3.tub.tuhh.de/crk0771/blub/issues/10', 'time_stats': {'time_estimate': 0, 'total_time_spent': 0, 'human_time_estimate': None, 'human_total_time_spent': None}, 'task_completion_status': {'count': 0, 'completed_count': 0}, 'has_tasks': False, '_links': {'self': 'http://cls3.tub.tuhh.de/api/v4/projects/13/issues/10', 'notes': 'http://cls3.tub.tuhh.de/api/v4/projects/13/issues/10/notes', 'award_emoji': 'http://cls3.tub.tuhh.de/api/v4/projects/13/issues/10/award_emoji', 'project': 'http://cls3.tub.tuhh.de/api/v4/projects/13'}, 'subscribed': True}
+        except:
+            log.error('Creating issue "{}" failed'.format(data['title']))
+            #raise CommandError('Creating issue "{}" failed'.format(data['title']))
 
         # Handle issues notes
-        issue_notes_url = '{}/notes'.format(issue_url, 'notes')
+        try:
+            issue_url = '{}/{}'.format(issues_url, issue['iid'])
+            issue_notes_url = '{}/notes'.format(issue_url, 'notes')
+        except:
+            log.error('Creating note url failed subsequently to creating issue "{}" failed'.format(data['title']))
         for note_data, note_meta in meta['notes']:
             note_headers = {}
-            if 'sudo_user' in note_meta:
-                note_headers['SUDO'] = note_meta['sudo_user']
-            self.api.post(
-                issue_notes_url, data=note_data,
-                headers=note_headers)
+            try:
+                if 'sudo_user' in note_meta:
+                    note_headers['SUDO'] = note_meta['sudo_user']
+                self.api.post(
+                    issue_notes_url, data=note_data,
+                    headers=note_headers)
+            except:
+                log.error('Adding note for issue "{}" failed'.format(data['title']))
 
         # Handle closed status
-        if meta['must_close']:
-            self.api.put(issue_url, {'state_event': 'close'})
+        try:
+            if meta['must_close']:
+                self.api.put(issue_url, {'state_event': 'close'})
+        except:
+            log.error('Setting closed status failed "{}" failed'.format(data['title']))
+
+        # Ignore failed try blok above, keep going
+        if 'issue' not in locals():
+            issue = {'id': 0, 'iid': 0, 'title': data['title']}
 
         return issue
 

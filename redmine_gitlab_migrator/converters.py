@@ -65,6 +65,10 @@ def convert_notes(redmine_issue_journals, redmine_user_index, gitlab_user_index,
 
     for entry in redmine_issue_journals:
         journal_notes = entry.get('notes', '')
+
+        if journal_notes is None:
+            continue
+
         if len(journal_notes) > 0:
             journal_notes = textile_converter.convert(journal_notes)
             try:
